@@ -1,5 +1,7 @@
 #%%
 
+# this script loads in raw fitting outputs, and adds brain region labels for comparison across species
+
 import pandas as pd
 import numpy as np
 
@@ -11,6 +13,8 @@ plt.style.use('seaborn')
 data = pd.read_csv('/Users/zachz/Library/Mobile Documents/com~apple~CloudDocs/Zach/Final Timescales Data/final_data.csv')
 
 #%%
+
+# group by brain region for comparison
 
 amyg = data[(data.area=='amygdala') | (data.area=='bla') | (data.area=='amyg') | (data.area=='AMG')]
 hc = data[(data.area=='hippocampus') | (data.area=='hippocampus2') | (data.area=='dg') | (data.area=='ca1') | (data.area=='ca2') | (data.area=='ca3') | (data.area=='hc')]
@@ -32,5 +36,6 @@ grouped_data['brain_region'] = pd.Categorical(grouped_data['brain_region'], cate
 
 #%%
 
+# export for lazy loading
+
 grouped_data.to_csv('processed_data.csv',index=False)
-# %%

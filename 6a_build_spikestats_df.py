@@ -1,4 +1,14 @@
-#%% Imports, get filenames
+#%% 
+
+# This script calculates various statistics about spike trains, including:
+# - number of spikes
+# - mean firing rate
+# - mean and variance of z-scored firing rate in 1s sliding windows
+# - Fano factor
+# - burstiness index
+
+
+# Imports, get filenames
 import os
 import numpy as np
 import pandas as pd
@@ -12,9 +22,26 @@ import bottleneck as bn
 
 import mat73
 
-plt.style.use('seaborn')
+# burstiness - based on Goh and Barabasi, Europhysics Letters 2008
 
-directory = '/Users/zachz/Library/Mobile Documents/com~apple~CloudDocs/Timescales Raw Data'
+def burstiness_index(spike_times):
+    isis = np.diff(spike_times)
+    
+    # keep values below 1s to exclude breaks between tasks, etc.
+    # matches timescale estimation window, also
+    #isis = isis[isis < 3]
+    
+    if len(isis) < 2:
+        return np.nan  # Not enough spikes to compute BI
+    # keep only ISIs less than 1 sec
+    isis = isis[isis < 1]
+    mu_isi = np.mean(isis)
+    sigma_isi = np.std(isis)
+    return (sigma_isi - mu_isi) / (sigma_isi + mu_isi)
+
+#plt.style.use('seaborn')
+
+directory = '/Users/zachz/mounts/backup/Zach/timescales dataset final final backup/datasets_revision'
  
 datasets = []
 
@@ -50,17 +77,17 @@ for ds in range(len(datasets)):
     area = items[1].replace('.mat','')
 
     spikes = mat['spikes']
-    cell_info = mat['cell_info']
+    # cell_info = mat['cell_info']
     
     print(dataset, area)
     
-    if type(cell_info) == list:
+    # if type(cell_info) == list:
         
-        cell_info = cell_info[0]
+    #     cell_info = cell_info[0]
         
-    elif type(cell_info) == np.ndarray:
+    # elif type(cell_info) == np.ndarray:
         
-        cell_info = {'dataset': cell_info[0][0],'species': cell_info[0][1],'brain_area':cell_info[0][2]}
+    #     cell_info = {'dataset': cell_info[0][0],'species': cell_info[0][1],'brain_area':cell_info[0][2]}
     
     for cell in range(len(spikes)):
         
@@ -99,19 +126,9 @@ for ds in range(len(datasets)):
             
             fano = var_z / mean_z
             
-            # burstiness - from Ko et al J Neurosci Methods 2012
+            # burstiness
             
-            isis = np.diff(spiketimes)
-            
-            log_isi = np.log10(isis)
-            
-            norm_log_isi = log_isi - np.mean(log_isi)
-            
-            burst_thresh = np.percentile(norm_log_isi,99.5)
-            pause_thresh = np.percentile(norm_log_isi,0.5)   
-            
-            prop_burst = sum(1 for i in norm_log_isi if i > burst_thresh)/len(norm_log_isi)
-            prop_pause = sum(1 for i in norm_log_isi if i < pause_thresh)/len(norm_log_isi)
+            burst = burstiness_index(spiketimes)
             
             # assemble
             
@@ -132,11 +149,11 @@ for ds in range(len(datasets)):
             elif dataset == 'stein':
                 species = 'mouse'
 
-            all_spike_stats.append((dataset,species,area,cell,n_spikes,mean_fr,mean_z,var_z,fano,prop_burst,prop_pause))
+            all_spike_stats.append((dataset,species,area,cell,n_spikes,mean_fr,mean_z,var_z,fano,burst))
 
 # combine into df  
       
-data = pd.DataFrame(all_spike_stats,columns=['dataset','species','area','unit','n_spikes','mean_fr','mean_norm_fr','var_norm_fr','fano','prop_burst','prop_pause'])
+data = pd.DataFrame(all_spike_stats,columns=['dataset','species','area','unit','n_spikes','mean_fr','mean_norm_fr','var_norm_fr','fano','burst'])
 
 # rename areas to match other dataframes
 
@@ -158,7 +175,7 @@ brain_regions = ['Hippocampus','Amygdala','OFC','mPFC','ACC']
 
 grouped_data['brain_region'] = pd.Categorical(grouped_data['brain_region'], categories = brain_regions , ordered = True)
 
-#%% load in freds data
+#%% load in ISI timescale data
 
 fred_data = pd.read_csv('processed_data.csv')
 
@@ -174,6 +191,18 @@ filt_data['brain_region'] = pd.Categorical(filt_data['brain_region'], categories
 fred_data = filt_data
 
 #%%
+
+# Merge grouped_data and fred_data on dataset, area, and unitID/unit
+merged_data = pd.merge(grouped_data, fred_data, left_on=['dataset', 'area', 'unit'], right_on=['name', 'area', 'unitID'], how='left')
+
+# Select relevant columns and rename them if necessary
+merged_data = merged_data[['dataset', 'species_x', 'area', 'unit', 'n_spikes', 'mean_fr', 'mean_norm_fr', 'var_norm_fr', 'fano', 'burst', 'tau', 'lat', 'r2']]
+merged_data = merged_data.rename(columns={'species_x': 'species'})
+
+
+#%%
+
+# loop over units and match
 
 new_df = pd.DataFrame()
 
@@ -208,5 +237,5 @@ for dataset in grouped_data.dataset.unique():
                 
                 pass
 
-new_df.to_csv('spike_stats2.csv')
+new_df.to_csv('spike_stats.csv')
 # %%

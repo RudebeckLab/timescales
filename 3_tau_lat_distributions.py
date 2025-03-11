@@ -1,5 +1,7 @@
 #%%
 
+# this script plots the distributions of timescales and latencies across brain regions and species
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -19,6 +21,8 @@ plt.rcParams['font.size'] = '7'
 
 #%%
 
+# load, filter, plot order
+
 data = pd.read_csv('processed_data.csv')
 
 data['species'] = pd.Categorical(data['species'], categories = ['mouse','monkey','human'] , ordered = True)
@@ -33,6 +37,8 @@ filt_data['brain_region'] = pd.Categorical(filt_data['brain_region'], categories
 
 
 #%%
+
+# Figure 2C - timescale distributions
 
 fig,axs = plt.subplots(1,5,figsize=(7,2),sharex=True,sharey=True)
 
@@ -49,9 +55,18 @@ for region, ax in zip(brain_regions,axs.ravel()):
     
     ax.tick_params(axis='x',labelsize=7)
     ax.tick_params(axis='y',labelsize=7)  
-    ax.set_xticks([10,100,1000])
-    ax.set_xticklabels(['10','100','1000'])  
+    # ax.set_xticks([10,100,1000])
+    # ax.set_xticklabels(['10','100','1000'])  
     #ax.xaxis.set_label_position('top')
+    
+    # Calculate and plot the mean for each species
+    means = this_region.groupby('species')['tau'].mean()
+    colors = sns.color_palette(n_colors=len(means))
+    
+    for i, ((species, mean), color) in enumerate(zip(means.items(), colors)):
+        #ax.axvline(mean, color=color, linestyle='--')
+        ax.plot(mean, 1.7 - i * 0.05, 'o', color=color, markersize=3)  # Adjust y-coordinate to avoid overlap
+    
     
     plt.setp(g.get_legend().get_texts(), fontsize='7') 
     leg = ax.get_legend()
@@ -65,6 +80,8 @@ plt.tight_layout()
 plt.show()
 
 #%%
+
+# levene's test for equal variances
 
 for brain_region in filt_data.brain_region.unique():
     
@@ -91,6 +108,8 @@ for brain_region in filt_data.brain_region.unique():
 
 #%%
 
+# Figure 2D - latency distributions
+
 fig,axs = plt.subplots(1,5,figsize=(7,2),sharex=True,sharey=True)
 
 for region, ax in zip(brain_regions,axs.ravel()):
@@ -109,8 +128,15 @@ for region, ax in zip(brain_regions,axs.ravel()):
     ax.tick_params(axis='x',labelsize=7)
     ax.tick_params(axis='y',labelsize=7)
     ax.set_xlim(-50,250)
-
     
+    # Calculate and plot the mean for each species
+    means = this_region.groupby('species')['lat'].mean()
+    colors = sns.color_palette(n_colors=len(means))
+    
+    for i, ((species, mean), color) in enumerate(zip(means.items(), colors)):
+        #ax.axvline(mean, color=color, linestyle='--')
+        ax.plot(mean, 0.049 - i * 0.0015, 'o', color=color, markersize=3)  # Adjust y-coordinate to avoid overlap
+
     plt.setp(g.get_legend().get_texts(), fontsize='7') 
     leg = ax.get_legend()
     leg.set_title('')
@@ -123,6 +149,8 @@ plt.tight_layout()
 plt.show()
 
 #%%
+
+# levene's test for equal variances
 
 for brain_region in filt_data.brain_region.unique():
     
@@ -147,7 +175,9 @@ for brain_region in filt_data.brain_region.unique():
         print(brain_region)
         print(p)
 
-# %% how do variances compare?
+# %% 
+
+# pairwise levene's tests
 
 from scipy.stats import levene
 
@@ -183,6 +213,8 @@ for brain_region in filt_data.brain_region.unique():
         print('tau p-val = %.3f' %p)
         
 #%%
+
+# pairwise levene's tests
 
 for brain_region in filt_data.brain_region.unique():
     
