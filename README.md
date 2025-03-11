@@ -5,4 +5,4 @@ Inside the *matlab_timescale_extraction* folder are the MATLAB scripts used to e
 
 Stepping through the scripts in the top-level folder starting with 0-6 will process and plot the data shown in the main manuscript figures. Within each script, comments are used to indicate where each figure is plotted.
 
-Inside the *method_comparison* folder are the scripts used to process the data toward Figure S2. As before, stepping through scripts 0-3 will generate each of the plots, with clear comments where each plot is generated.
+Inside the *method_comparison* folder are the scripts used to process the data toward Figure S2. As before, stepping through scripts 0-3 will generate each of the plots, with clear comments where each plot is generated. Inside this folder are also .mat and .csv files (each containing the same data) from the 4 different timescale estimation methods employed.
